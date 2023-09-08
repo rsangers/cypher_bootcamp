@@ -4,7 +4,7 @@ import re
 from typing import Optional
 import fnmatch
 import numpy as  np
-
+from collections import OrderedDict
 
 class Vocabulary:
 
@@ -66,6 +66,10 @@ def calculate_rel_frequencies(input: dict):
                 output[key].update({k2: val / sum})
             else:
                 output[key] = {k2: val / sum}
+
+
+            output[key] = {k: v for k, v in sorted(output[key].items(), key=lambda item: item[1], reverse=True)}
+
 
     return output
 
