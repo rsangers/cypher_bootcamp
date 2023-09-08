@@ -3,9 +3,12 @@ from pydantic import BaseModel
 
 from cipher.constants import ALPHABET
 from cipher.solver import solve_cipher
+from cipher.utils import Vocabulary
 
 app = FastAPI()
 
+
+vocab = Vocabulary('./enwiki-2023-04-13.txt')
 
 class Message(BaseModel):
     ciphertext: str
@@ -25,7 +28,7 @@ async def echo(message: Message):
 @app.post("/api/solve/en")
 async def echo(message: Message):
     ciphertext = message.ciphertext
-    plaintext, mapping = solve_cipher(ciphertext)
+    plaintext, mapping = solve_cipher(ciphertext, vocab)
     return {
         "ciphertext": message.ciphertext,
         "plaintext": plaintext,

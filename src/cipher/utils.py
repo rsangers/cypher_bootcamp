@@ -74,17 +74,27 @@ def calculate_rel_frequencies(input: dict):
     return output
 
 
-vocab = Vocabulary('./enwiki-2023-04-13.txt')
+# vocab = Vocabulary('./enwiki-2023-04-13.txt')
 
 
-# Tests
-print(vocab.occurances.get('the'))
+# # Tests
+# print(vocab.occurances.get('the'))
 
-print(vocab.get_candidates('??'))
+# print(vocab.get_candidates('??'))
 
-a = {'a' : { 'i': 1000, 'a': 3000 },
-     'cgz' : {'the': 10, 'ahh' : 1} 
-    }
+# a = {'a' : { 'i': 1000, 'a': 3000 },
+#      'cgz' : {'the': 10, 'ahh' : 1} 
+#     }
 
-print(calculate_rel_frequencies(a))
+# print(calculate_rel_frequencies(a))
 
+def create_word_patterns_from_mapping(words: list, mapping: dict) -> dict:
+    regexs_per_word = {}
+    for word in words:
+        regexs_per_word[word] = ''.join([mapping[char] for char in word])
+
+    return regexs_per_word
+
+def update_mapping(word: str, decrypted_word: str, mapping: dict) -> dict:
+    for idx in range(len(word)):
+        mapping[word[idx]] = decrypted_word[idx]

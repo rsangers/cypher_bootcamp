@@ -1,32 +1,46 @@
 from cipher.constants import ALPHABET
+from cipher.utils import Vocabulary, create_word_patterns_from_mapping
 
 
-def solve_cipher(ciphertext: str) -> (str, dict):
+def solve_cipher(ciphertext: str, vocabulary: Vocabulary) -> (str, dict):
     finished = False
-    mapping = {}
+    previous_mappings = []
+    mapping = {char: '?' for char in ALPHABET}
+    impossible_mappings = []
     plaintext = ciphertext
 
     words = ciphertext.split()
 
-    while not finished:
+    while True:
         regexs_per_word = create_word_patterns_from_mapping(words, mapping)
 
         # Check if we are finished
+        finished = '?' not in ''.join(regexs_per_word.values())
+        if finished:
+            break
 
         word_possibilities = {}
         for word, regex in regexs_per_word.items():
-            word_possibilities[word] = get_candidates(regex) # Returns all possible words for a (partly) encrypted word
-            
+            word_possibilities[word] = vocabulary.get_candidates(regex) # Returns all possible words for a (partly) encrypted word
+
         # Check if it is still possible
+        if any(len(word_possibilities.values()) == 0):
+            impossible_mappings.append(mapping)
+            mapping = previous_mappings.pop()
+            continue
         
 
-        word_possibilities_freq = calculate_rel_frequencies(word_possibilities) # Adds relative prob. of each possible word
+        # word_possibilities_freq = calculate_rel_frequencies(word_possibilities) # Adds relative prob. of each possible word
 
-        fixated_word = select_candidate(word_possibilities_freq) # Selects candidate based on highest relative prob.
+        # decrypted_word = select_candidate(word_possibilities_freq) # Selects candidate based on highest relative prob.
 
-        mapping = update_mapping(mapping, fixated_word)
+        previous_mappings.append([mapping])
+        # mapping = update_mapping(word, decrypted_word, mapping)
 
+    # Fill all remaining question-marks with an unused letter
+    unused_letters = [char for char in ALPHABET if char not in mapping.values()]
+    for char, decrypted_char in mapping.items():
+        if decrypted_char == '?':
+            mapping[char] = unused_letters.pop()
 
-    
-
-    return plaintext, ciphertext
+    return plaintext, mapping
