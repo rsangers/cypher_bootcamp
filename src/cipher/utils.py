@@ -3,6 +3,8 @@ import os
 import re
 from typing import Optional
 import fnmatch
+import numpy as  np
+
 
 class Vocabulary:
 
@@ -39,8 +41,46 @@ class Vocabulary:
         return output
 
 
+def calculate_rel_frequencies(input: dict):
+    """
+    input is in shape of:
+
+    {'a' : { 'i': 1000, 'a': 3000 }
+     'cgz' : {'the': 30000, ...}  
+    }
+
+    returns in shape of {'a' : { 'i': 1/4, 'a': 3/4 }
+     'cgz' : {'the': 30000, ...}  
+
+    Note: the keys will be ordered by probabilities
+    """
+    output = {}
+
+    for key, value in input.items():
+
+        sum = np.sum(list(input[key].values()))
+        
+        for k2, val in value.items():
+
+            if key in output:
+                output[key].update({k2: val / sum})
+            else:
+                output[key] = {k2: val / sum}
+
+    return output
+
+
 vocab = Vocabulary('./enwiki-2023-04-13.txt')
 
+
+# Tests
 print(vocab.occurances.get('the'))
 
 print(vocab.get_candidates('??'))
+
+a = {'a' : { 'i': 1000, 'a': 3000 },
+     'cgz' : {'the': 10, 'ahh' : 1} 
+    }
+
+print(calculate_rel_frequencies(a))
+
