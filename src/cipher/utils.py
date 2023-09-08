@@ -24,20 +24,26 @@ class Vocabulary:
                 word, occurrence = line.strip().split()
                 
                 # Convert the occurrence count from string to an integer
-                self.occurrence = int(occurrence)
+                # self.occurrence = int(occurrence)
                 
                 # Add the word and its occurrence count to the dictionary
-                self.occurances[word] = occurrence
+                self.occurances[word] = int(occurrence)
 
     def get_candidates(self, pattern, return_top_n: Optional[int] = None ):
 
         output = {}
         
+        counter = 0
+
         filtered = fnmatch.filter(self.occurances.keys(), pattern)
 
         for key in filtered:
-            output[key] = self.occurances[key]
-        
+            if counter < return_top_n:
+                output[key] = self.occurances[key]
+                counter+=1
+            else:
+                break
+
         return output
 
 
@@ -49,8 +55,8 @@ def calculate_rel_frequencies(input: dict):
      'cgz' : {'the': 30000, ...}  
     }
 
-    returns in shape of {'a' : { 'i': 1/4, 'a': 3/4 }
-     'cgz' : {'the': 30000, ...}  
+    returns in shape of {'a' : {  'a': 3/4, 'i': 1/4, }
+     'cgz' : {'the': 0.77, ...}  
 
     Note: the keys will be ordered by probabilities
     """
@@ -58,7 +64,7 @@ def calculate_rel_frequencies(input: dict):
 
     for key, value in input.items():
 
-        sum = np.sum(list(input[key].values()))
+        sum = np.sum(np.array(list(input[key].values())))
         
         for k2, val in value.items():
 
@@ -66,7 +72,6 @@ def calculate_rel_frequencies(input: dict):
                 output[key].update({k2: val / sum})
             else:
                 output[key] = {k2: val / sum}
-
 
             output[key] = {k: v for k, v in sorted(output[key].items(), key=lambda item: item[1], reverse=True)}
 
@@ -88,6 +93,26 @@ def calculate_rel_frequencies(input: dict):
 
 # print(calculate_rel_frequencies(a))
 
+def select_candidate(word_possibilities_freq: dict) -> (str, str):
+    decrypted_word = ""
+    encrypted_word = ""
+    value = -1
+    for word, word_possibilities in word_possibilities_freq.items():
+        if list(word_possibilities.values())[0] > value:
+            value = list(word_possibilities.values())[0]
+            decrypted_word = list(word_possibilities.keys())[0]
+            encrypted_word = word
+
+    return encrypted_word, decrypted_word
+
+
+a = {'a' : { 'i': 3000, 'z': 1000 },
+     'cgz' : {'the': 10, 'ahh' : 1} 
+    }
+
+print(select_candidate(a))
+
+
 def create_word_patterns_from_mapping(words: list, mapping: dict) -> dict:
     regexs_per_word = {}
     for word in words:
@@ -98,3 +123,17 @@ def create_word_patterns_from_mapping(words: list, mapping: dict) -> dict:
 def update_mapping(word: str, decrypted_word: str, mapping: dict) -> dict:
     for idx in range(len(word)):
         mapping[word[idx]] = decrypted_word[idx]
+
+    return mapping
+
+def apply_mapping_final(plaintext, mapping):
+    out = ''
+    
+    for word in plaintext.split():
+        for letter in word:
+            out += mapping[letter]
+
+        out += ' '
+    out = out[:-1]
+
+    return out
