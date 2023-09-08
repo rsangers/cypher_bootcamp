@@ -29,3 +29,10 @@ Lets say we fixate g -> t
 What could cgz be?
 Pattern matching between words in W and ?t?
 
+
+# Things to fix:
+Mappings should be exclusive (not multiple letters mapping to the same character)
+Accept punctuation
+Rollback if it is not correct anymore
+Increase performance by removing uncommon words 
+
