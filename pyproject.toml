@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cipher"
+authors = [
+    {name = "Konstantin"},
+    {name = "Ruben"},
+]
+description = "Application for solving substitution cipher via an API"
+
+dependencies = [
+    "fastapi==0.103.1",
+    "uvicorn==0.23.2"
+]
+dynamic = ["version"]

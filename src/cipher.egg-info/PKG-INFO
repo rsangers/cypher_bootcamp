@@ -1,0 +1,7 @@
+Metadata-Version: 2.1
+Name: cipher
+Version: 0.0.0
+Summary: Application for solving substitution cipher via an API
+Author: Konstantin, Ruben
+Requires-Dist: fastapi==0.103.1
+Requires-Dist: uvicorn==0.23.2
