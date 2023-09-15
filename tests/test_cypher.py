@@ -1,6 +1,6 @@
 import cipher
 from cipher.constants import ALPHABET
-from cipher.utils import calculate_rel_frequencies, generate_cipher, create_word_patterns_from_mapping
+from cipher.utils import calculate_rel_frequencies, generate_cipher, create_word_patterns_from_mapping, select_candidate, update_mapping
 import pytest
 
 
@@ -61,6 +61,30 @@ def test_create_word_patterns_from_mapping(random_cipher, deterministic_cipher, 
 def test_calculate_rel_frequencies(word_possibilities, word_possibilities_freq):
 
     assert word_possibilities_freq == calculate_rel_frequencies(word_possibilities)
+
+def test_select_candidate(word_possibilities_freq):
+    encrypted_word, decrypted_word = select_candidate(word_possibilities_freq)
+
+    assert encrypted_word == 'a'
+    assert decrypted_word == 'a'
+
+    del word_possibilities_freq['a']
+
+    encrypted_word, decrypted_word = select_candidate(word_possibilities_freq)
+
+    assert encrypted_word == 'cgz'
+    assert decrypted_word == 'the'
+
+def test_update_mapping():
+    encrypted_word = 'cgz'
+    decrypted_word = 'the'
+    mapping = {char: '?' for char in ALPHABET}
+
+    mapping = update_mapping(encrypted_word, decrypted_word, mapping)
+
+    # Assert all non-fixated letters still map to a question mark
+    assert all(mapping[char] == '?' for char in ALPHABET if char not in encrypted_word)
+    assert all(mapping[encrypted_word[i]] == decrypted_word[i] for i in range(len(encrypted_word)))
 
 
 
