@@ -12,6 +12,7 @@ description = "Application for solving substitution cipher via an API"
 
 dependencies = [
     "fastapi==0.103.1",
-    "uvicorn==0.23.2"
+    "uvicorn==0.23.2",
+    "pytest==7.4.2"
 ]
 dynamic = ["version"]

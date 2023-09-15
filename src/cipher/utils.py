@@ -1,10 +1,12 @@
 
 import os
+import random
 import re
 from typing import Optional
 import fnmatch
 import numpy as  np
 from collections import OrderedDict
+
 
 from constants import ALPHABET
 
@@ -155,3 +157,10 @@ def apply_mapping_final(plaintext, mapping):
     out = out[:-1]
 
     return out
+
+def generate_cipher():
+    shuffled_alphabet = ALPHABET.copy()
+    random.shuffle(shuffled_alphabet)
+
+    cipher = {ALPHABET[i]: shuffled_alphabet[i] for i in range(len(ALPHABET))}
+    return cipher
