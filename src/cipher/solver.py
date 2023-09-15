@@ -8,6 +8,7 @@ def solve_cipher(ciphertext: str, vocabulary: Vocabulary) -> (str, dict):
     ciphertext = ciphertext.lower()
 
     finished = False
+    rollback = False
     previous_mappings = []
     mapping = {char: '?' for char in ALPHABET}
     impossible_mappings = []
@@ -20,8 +21,17 @@ def solve_cipher(ciphertext: str, vocabulary: Vocabulary) -> (str, dict):
     while True:
         regexs_per_word = create_word_patterns_from_mapping(words, mapping)
 
+        # Remove all decrypted words
+        words_to_remove = []
+        for word, regex in regexs_per_word.items():
+            if '?' not in regex:
+                words_to_remove.append(word)
+        for word in words_to_remove:
+            regexs_per_word.pop(word)
+            
+
         # Check if we are finished
-        finished = '?' not in ''.join(regexs_per_word.values())
+        finished = len(regexs_per_word) == 0
         if finished:
             break
 
@@ -30,21 +40,32 @@ def solve_cipher(ciphertext: str, vocabulary: Vocabulary) -> (str, dict):
             word_possibilities[word] = vocabulary.get_candidates(regex, return_top_n=20) # Returns all possible words for a (partly) encrypted word
 
         # Check if it is still possible
-        # if any(len(word_possibilities.values()) == 0):
-        #     impossible_mappings.append(mapping)
-        #     mapping = previous_mappings.pop()
-        #     continue
+        for word_possibility in word_possibilities.values():
+            if len(word_possibility) == 0:
+                print("No possible solutions anymore, rollback")
+                impossible_mappings.append(mapping)
+                mapping = previous_mappings[-1]
+                previous_mappings.pop()
+                rollback = True
+                break
+        if rollback:
+            rollback = False
+            continue
     
 
         word_possibilities_freq = calculate_rel_frequencies(word_possibilities) # Adds relative prob. of each possible word
 
-        encrypted_word, decrypted_word = select_candidate(word_possibilities_freq) # Selects candidate based on highest relative prob.
+        encrypted_word, decrypted_word = select_candidate(word_possibilities_freq, impossible_mappings, mapping) # Selects candidate based on highest relative prob.
+
+        if encrypted_word == "":
+            print("No possible solutions anymore, continuing with roundup")
+            break
+    
+        print(f"Selected new fixation: {encrypted_word} -> {decrypted_word}")
 
         previous_mappings.append(mapping)
+        print(mapping)
         mapping = update_mapping(encrypted_word, decrypted_word, mapping)
-
-
-        words.remove(encrypted_word)
 
     # Fill all remaining question-marks with an unused letter
     unused_letters = [char for char in ALPHABET if char not in mapping.values()]
@@ -58,4 +79,4 @@ def solve_cipher(ciphertext: str, vocabulary: Vocabulary) -> (str, dict):
     return solution, mapping   
 
 
-solve_cipher('a cgz ag', vocabulary=Vocabulary('./enwiki-2023-04-13.txt'))
+#solve_cipher('a cgz ag', vocabulary=Vocabulary('./enwiki-2023-04-13.txt'))

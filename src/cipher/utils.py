@@ -11,8 +11,9 @@ from cipher.constants import ALPHABET
 
 class Vocabulary:
 
-    def __init__(self, file_name) -> None:
+    def __init__(self, file_name, occurrence_cutoff = -1) -> None:
         self.file_name = file_name
+        self.occurrence_cutoff = occurrence_cutoff
         self.occurances = {}
         self.read_file()
 
@@ -25,6 +26,9 @@ class Vocabulary:
             for line in file:
                 # Split each line into word and occurrence using whitespace as the separator
                 word, occurrence = line.strip().split()
+
+                if int(occurrence) < self.occurrence_cutoff:
+                    return
                 
                 # Convert the occurrence count from string to an integer
                 # self.occurrence = int(occurrence)
@@ -32,7 +36,16 @@ class Vocabulary:
                 # Add the word and its occurrence count to the dictionary
                 self.occurances[word] = int(occurrence)
 
-    def get_candidates(self, pattern, return_top_n: Optional[int] = None ):
+    def get_candidates(self, pattern, return_top_n: Optional[int] = 20 ):
+
+        # get the characters that are in the pattern already
+        characters_to_exclude = [char for char in pattern if char != '?']
+
+        # get the characters without the constants
+        possible_chars = "".join([char for char in ALPHABET if char not in characters_to_exclude])
+
+        # replace the '?' with the possible characters based on exclusions 
+        pattern = pattern.replace('?',f'[{possible_chars}]')
 
         output = {}
         
@@ -46,7 +59,7 @@ class Vocabulary:
                 counter+=1
             else:
                 break
-
+        
         return output
 
 
@@ -96,7 +109,8 @@ def calculate_rel_frequencies(input: dict):
 
 # print(calculate_rel_frequencies(a))
 
-def select_candidate(word_possibilities_freq: dict) -> (str, str):
+def select_candidate(word_possibilities_freq: dict, impossible_mappings, mapping) -> (str, str):
+
     decrypted_word = ""
     encrypted_word = ""
     value = -1
@@ -105,15 +119,34 @@ def select_candidate(word_possibilities_freq: dict) -> (str, str):
             value = list(word_possibilities.values())[0]
             decrypted_word = list(word_possibilities.keys())[0]
             encrypted_word = word
+    
+    new_mapping = update_mapping(encrypted_word, decrypted_word, mapping)
+
+    while new_mapping in impossible_mappings:
+        print("impossible mapping")
+        
+        word_possibilities_freq[encrypted_word].remove(decrypted_word)
+
+        decrypted_word = ""
+        encrypted_word = ""
+        value = -1
+        for word, word_possibilities in word_possibilities_freq.items():
+            if list(word_possibilities.values())[0] > value:
+                value = list(word_possibilities.values())[0]
+                decrypted_word = list(word_possibilities.keys())[0]
+                encrypted_word = word
+        
+        new_mapping = update_mapping(encrypted_word, decrypted_word, mapping)
+    print("found possible mapping")
 
     return encrypted_word, decrypted_word
 
 
-a = {'a' : { 'i': 3000, 'z': 1000 },
-     'cgz' : {'the': 10, 'ahh' : 1} 
-    }
+# a = {'a' : { 'i': 3000, 'z': 1000 },
+#      'cgz' : {'the': 10, 'ahh' : 1} 
+#     }
 
-print(select_candidate(a))
+# print(select_candidate(a))
 
 
 def create_word_patterns_from_mapping(words: list, mapping: dict) -> dict:
