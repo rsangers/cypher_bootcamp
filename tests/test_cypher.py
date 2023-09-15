@@ -1,6 +1,7 @@
 import cipher
 from cipher.constants import ALPHABET
-from cipher.utils import calculate_rel_frequencies, generate_cipher, create_word_patterns_from_mapping, select_candidate, update_mapping
+from cipher.solver import solve_cipher
+from cipher.utils import Vocabulary, calculate_rel_frequencies, generate_cipher, create_word_patterns_from_mapping, select_candidate, update_mapping
 import pytest
 
 
@@ -85,6 +86,24 @@ def test_update_mapping():
     # Assert all non-fixated letters still map to a question mark
     assert all(mapping[char] == '?' for char in ALPHABET if char not in encrypted_word)
     assert all(mapping[encrypted_word[i]] == decrypted_word[i] for i in range(len(encrypted_word)))
+
+def test_solve_cipher():
+    ciphertext = "I ate it"
+    ciphertext_with_punc = "I, ate. ?it"
+    vocab = Vocabulary('./enwiki-2023-04-13.txt')
+
+    solution, mapping = solve_cipher(ciphertext, vocab)
+    solution_with_punc, mapping_with_punc = solve_cipher(ciphertext_with_punc, vocab)
+
+    # Assert resulting mappings are equal with/without punctuation
+    assert all(mapping[key] == mapping_with_punc[key] for key in mapping.keys())
+
+    # Assert punctuation is still in the same position
+    assert solution_with_punc[1] == ','
+    assert solution_with_punc[6] == '.'
+    assert solution_with_punc[8] == '?'
+
+
 
 
 

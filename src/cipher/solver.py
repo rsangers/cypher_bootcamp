@@ -1,15 +1,21 @@
+import re
 from cipher.constants import ALPHABET
 from cipher.utils import Vocabulary, apply_mapping_final, calculate_rel_frequencies, create_word_patterns_from_mapping, select_candidate, update_mapping
 
 
 def solve_cipher(ciphertext: str, vocabulary: Vocabulary) -> (str, dict):
+    # Change to lowercase
+    ciphertext = ciphertext.lower()
+
     finished = False
     previous_mappings = []
     mapping = {char: '?' for char in ALPHABET}
     impossible_mappings = []
-    plaintext = ciphertext
+    solution = ciphertext
 
-    words = ciphertext.split()
+    ciphertext_no_punctuation = re.sub(r'[^\w\s]', '', ciphertext)
+
+    words = ciphertext_no_punctuation.split()
 
     while True:
         regexs_per_word = create_word_patterns_from_mapping(words, mapping)
@@ -46,11 +52,10 @@ def solve_cipher(ciphertext: str, vocabulary: Vocabulary) -> (str, dict):
         if decrypted_char == '?':
             mapping[char] = unused_letters.pop()
 
-    
+    for encrypted_char, decrypted_char in mapping.items():
+        solution = solution.replace(encrypted_char, decrypted_char)
 
-    plaintext = apply_mapping_final(plaintext, mapping)
-
-    return plaintext, mapping   
+    return solution, mapping   
 
 
 solve_cipher('a cgz ag', vocabulary=Vocabulary('./enwiki-2023-04-13.txt'))
