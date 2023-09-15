@@ -7,7 +7,8 @@ import fnmatch
 import numpy as  np
 from collections import OrderedDict
 
-from cipher.constants import ALPHABET
+
+from constants import ALPHABET
 
 class Vocabulary:
 
@@ -32,7 +33,17 @@ class Vocabulary:
                 # Add the word and its occurrence count to the dictionary
                 self.occurances[word] = int(occurrence)
 
-    def get_candidates(self, pattern, return_top_n: Optional[int] = None ):
+    def get_candidates(self, pattern, return_top_n: Optional[int] = 20 ):
+
+
+        # get the characters that are in the pattern already
+        characters_to_exclude = [char for char in pattern if char != '?']
+
+        # get the characters without the constants
+        possible_chars = "".join([char for char in ALPHABET if char not in characters_to_exclude])
+
+        # replace the '?' with the possible characters based on exclusions 
+        pattern = pattern.replace('?',f'[{possible_chars}]')
 
         output = {}
         
@@ -82,7 +93,13 @@ def calculate_rel_frequencies(input: dict):
     return output
 
 
-# vocab = Vocabulary('./enwiki-2023-04-13.txt')
+vocab = Vocabulary('./enwiki-2023-04-13.txt')
+
+# def get_alphabet_with_exclusions(exclusions):
+#     from constants import ALPHABET
+
+
+print( vocab.get_candidates('c?e??') )
 
 
 # # Tests
