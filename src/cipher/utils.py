@@ -7,6 +7,7 @@ import fnmatch
 import numpy as  np
 from collections import OrderedDict
 
+
 from cipher.constants import ALPHABET
 
 class Vocabulary:
@@ -102,7 +103,13 @@ def calculate_rel_frequencies(input: dict):
     return output
 
 
-# vocab = Vocabulary('./enwiki-2023-04-13.txt')
+vocab = Vocabulary('./enwiki-2023-04-13.txt')
+
+# def get_alphabet_with_exclusions(exclusions):
+#     from constants import ALPHABET
+
+
+print( vocab.get_candidates('c?e??') )
 
 
 # # Tests
