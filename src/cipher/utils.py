@@ -12,8 +12,9 @@ from cipher.constants import ALPHABET
 
 class Vocabulary:
 
-    def __init__(self, file_name) -> None:
+    def __init__(self, file_name, occurrence_cutoff = -1) -> None:
         self.file_name = file_name
+        self.occurrence_cutoff = occurrence_cutoff
         self.occurances = {}
         self.read_file()
 
@@ -26,6 +27,9 @@ class Vocabulary:
             for line in file:
                 # Split each line into word and occurrence using whitespace as the separator
                 word, occurrence = line.strip().split()
+
+                if int(occurrence) < self.occurrence_cutoff:
+                    return
                 
                 # Convert the occurrence count from string to an integer
                 # self.occurrence = int(occurrence)
@@ -33,11 +37,17 @@ class Vocabulary:
                 # Add the word and its occurrence count to the dictionary
                 self.occurances[word] = int(occurrence)
 
-    def get_candidates(self, pattern, return_top_n: Optional[int] = 20 ):
+    def get_candidates(self, regexs_per_word, mapping, return_top_n=20):
 
+        characters_to_exclude = [value for value in mapping.values() if value != '?']
 
-        # get the characters that are in the pattern already
-        characters_to_exclude = [char for char in pattern if char != '?']
+        word_possibilities = {}
+        for word, regex in regexs_per_word.items():
+            word_possibilities[word] = self.get_candidates_per_word(regex, characters_to_exclude, return_top_n)
+
+        return word_possibilities
+
+    def get_candidates_per_word(self, pattern, characters_to_exclude, return_top_n: Optional[int] = 20 ):
 
         # get the characters without the constants
         possible_chars = "".join([char for char in ALPHABET if char not in characters_to_exclude])
@@ -57,7 +67,7 @@ class Vocabulary:
                 counter+=1
             else:
                 break
-
+        
         return output
 
 
@@ -113,25 +123,31 @@ print( vocab.get_candidates('c?e??') )
 
 # print(calculate_rel_frequencies(a))
 
-def select_candidate(word_possibilities_freq: dict) -> (str, str):
-    decrypted_word = ""
-    encrypted_word = ""
-    value = -1
-    for word, word_possibilities in word_possibilities_freq.items():
-        if list(word_possibilities.values())[0] > value:
-            value = list(word_possibilities.values())[0]
-            decrypted_word = list(word_possibilities.keys())[0]
-            encrypted_word = word
+def select_candidate(word_possibilities_freq: dict, impossible_mappings, mapping) -> (str, str):
+    valid_mapping = False
+    while not valid_mapping:
 
-    return encrypted_word, decrypted_word
+        decrypted_word = ""
+        encrypted_word = ""
+        value = -1
+        for word, word_possibilities in word_possibilities_freq.items():
+            if len(word_possibilities.values()) == 0:
+                print("Rollback another step")
+                return "", "", False
+            if list(word_possibilities.values())[0] > value:
+                value = list(word_possibilities.values())[0]
+                decrypted_word = list(word_possibilities.keys())[0]
+                encrypted_word = word
+        
+        new_mapping = update_mapping(encrypted_word, decrypted_word, mapping)
 
+        valid_mapping = new_mapping not in impossible_mappings
 
-a = {'a' : { 'i': 3000, 'z': 1000 },
-     'cgz' : {'the': 10, 'ahh' : 1} 
-    }
+        if not valid_mapping:
+            print("Found impossible mapping")
+            del word_possibilities_freq[encrypted_word][decrypted_word]
 
-print(select_candidate(a))
-
+    return encrypted_word, decrypted_word, True
 
 def create_word_patterns_from_mapping(words: list, mapping: dict) -> dict:
     regexs_per_word = {}
@@ -141,10 +157,11 @@ def create_word_patterns_from_mapping(words: list, mapping: dict) -> dict:
     return regexs_per_word
 
 def update_mapping(word: str, decrypted_word: str, mapping: dict) -> dict:
+    new_mapping = mapping.copy()
     for idx in range(len(word)):
-        mapping[word[idx]] = decrypted_word[idx]
+        new_mapping[word[idx]] = decrypted_word[idx]
 
-    return mapping
+    return new_mapping
 
 def apply_mapping_final(plaintext, mapping):
     out = ''
@@ -164,3 +181,22 @@ def generate_cipher():
 
     cipher = {ALPHABET[i]: shuffled_alphabet[i] for i in range(len(ALPHABET))}
     return cipher
+
+def apply_rollback(impossible_mappings, mapping, history):
+    impossible_mappings.append(mapping)
+    mapping = history['mappings'].pop()
+    words = history['words'].pop()
+
+    return impossible_mappings, mapping, words, history
+
+def remove_decrypted_words(regexs_per_word, word_possibilities, words):
+    words_to_remove = []
+    for word, regex in regexs_per_word.items():
+        if '?' not in regex:
+            words_to_remove.append(word)
+
+    for word in words_to_remove:
+        word_possibilities.pop(word)
+        words = [w for w in words if w != word]
+
+    return word_possibilities, words
